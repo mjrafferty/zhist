@@ -196,6 +196,11 @@ __zhist_daemon_check() {
     return 1;
   fi
 
+	# If this user doesn't have write perms, don't try to manage daemon
+	if [ ! -w "${__ZHIST_PID_FILE}" ]; then
+		return 0;
+	fi
+
   if [[ -z "$__ZHIST_DAEMON_PID" ]]; then
     read -rt __ZHIST_DAEMON_PID < "${__ZHIST_PID_FILE}"
   fi
