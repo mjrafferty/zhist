@@ -1,0 +1,44 @@
+# vim:ft=zsh
+
+zhist-top () {
+
+  local field label;
+
+  __zhist_check;
+
+  1="${1:-cmd}"
+
+  case "$1" in
+    dir)
+      field="places.dir";
+      label="Directory";
+      ;;
+    cmd)
+      field="commands.argv";
+      label="Command";
+      ;;
+    host)
+      field="places.host";
+      label="Hostname";
+      ;;
+    *)
+      echo "Invalid sort field."
+      return 1;
+      ;;
+  esac
+
+  __zhist_query <<- EOF | column -t -s $SEP
+  SELECT
+    COUNT(*) AS Count,
+    $field AS "$label"
+  FROM history
+  LEFT JOIN commands ON history.command_id=commands.id
+  LEFT JOIN places ON history.place_id=places.id
+  GROUP BY $field
+  ORDER BY COUNT(*) DESC
+  LIMIT 20;
+EOF
+
+}
+
+zhist-top "$@"

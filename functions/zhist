@@ -1,0 +1,237 @@
+# vim:ft=zsh
+
+__zhist_usage () {
+
+	cat <<- EOF
+
+	Usage: zhist [--host] [--in] [--at] [-s n]+* [--from] [--until] [--limit] [--forget] [--detail]
+
+    --host    print the host column and show all hosts (otherwise current host)
+    --host x  find entries from host x
+    --in      find only entries run in the current dir or below
+    --in x    find only entries in directory x or below
+    --at      like --in, but excluding subdirectories
+    -s n      only show session n
+    -d        debug output query that will be run
+    --detail  show details
+    --forget  forget everything which matches in the history
+    --exact   don't match substrings
+    --sep x   print with separator x, and don't tabulate
+    --from x  only show commands after date x (sqlite date parser)
+    --until x only show commands before date x (sqlite date parser)
+    --limit n only show n rows. defaults to $LINES or 25
+
+EOF
+
+}
+
+zhist () {
+
+	__zhist_check
+
+  ARGA=("$@");
+
+	local selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
+
+  timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
+	selcols="${timecol}, session AS Session, dir as Directory, user as User"
+	cols="session, places.dir, users.user, commands.argv, start_time"
+  where="1=1"
+
+	if [[ -p /dev/stdout ]]; then
+		limit=""
+	else
+		limit="${$((LINES - 6)):-25}"
+	fi
+
+	for ((x=1;x<=$#ARGA;x++)); do
+		case "${ARGA[x]}" in
+			"-h"|"--help")
+				__zhist_usage;
+				return;
+				;;
+      "-H"|"--host")
+        i=1
+        while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
+          if (( i > 1 )); then hostwhere+=", "; fi
+          hostwhere="${hostwhere}\"${ARGA[x]}\""
+          ((i++));
+        done
+        ((x--));
+
+        if [[ -n "$hostwhere" ]]; then
+          where="${where} and places.host in (${hostwhere})"
+        else
+          hostwhere="all"
+        fi
+        cols="${cols}, places.host AS Hostname"
+        selcols="${selcols}, Hostname"
+        ;;
+      "-i"|"--in")
+        while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
+          dirwhere="${dirwhere}${dirwhere:+ or }places.dir LIKE '$(sql_escape "${ARGA[x]}")%'"
+        done
+        where="${where}${dirwhere:+ and (${dirwhere})}"
+        ;;
+      "-a"|"--at")
+        while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
+          dirwhere="${dirwhere}${dirwhere:+ or }places.dir = '$(sql_escape "${ARGA[x]}")'"
+        done
+        ((x--));
+        where="${where}${dirwhere:+ and (${dirwhere})}"
+        ;;
+			"-f"|"--from")
+        if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
+          from=${ARGA[x]};
+        else
+          ((x--));
+          echo "No or bad value for from";
+        fi
+				case $from in
+          "today") from="$(date "+%s" --date="$(date "+%F")")" ;;
+          "yesterday") from="$(($(date "+%s" --date="$(date "+%F")") - 86400 ))" ;;
+          *) from="$(date "+%s" --date="${from}")" ;;
+        esac
+        where="${where} AND start_time >= $from"
+				;;
+			"-u"|"--until")
+        if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
+          until=${ARGA[x]};
+        else
+          ((x--));
+          echo "No or bad value for until";
+        fi
+				case $until in
+          "today") until="$(date "+%s" --date="$(date "+%F")")" ;;
+          "yesterday") until="$(($(date "+%s" --date="$(date "+%F")") - 86400 ))" ;;
+          *) until="$(date "+%s" --date="${until}")" ;;
+				esac
+				where="${where} AND start_time <= $until"
+				;;
+			"-D"|"--debug")
+				debug=1
+				;;
+			"-s"|"--session")
+        if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
+          where="${where} AND session=\"${ARGA[x]}\""
+        else
+          ((x--));
+          echo "No or bad value for session";
+        fi
+        ;;
+			"-d"|"--detail")
+				cols="${cols}, exit_status, duration "
+				selcols="${selcols}, exit_status AS \"Return Code\",duration AS Duration "
+				;;
+			"--forget")
+				forget=1
+				;;
+			"-e"|"--exact")
+				exact=1
+				;;
+			"-l"|"--limit")
+        if [[ "${ARGA[++x]}" == [0-9]* ]]; then
+          limit=${ARGA[x]};
+        else
+          ((x--));
+          echo "No or bad value for limit";
+        fi
+        ;;
+			*)
+        cmd="${ARGA[x]}"
+				;;
+		esac
+	done
+
+  selcols="${selcols}, argv as Command"
+
+  if [[ -z ${hostwhere} ]]; then
+    where="${where} AND places.host= \"$HOST\""
+  fi
+
+  if [[ -n "$cmd" ]]; then
+    if [[ -z $exact ]]; then
+      where="${where} AND commands.argv glob '*$(sql_escape "$cmd")*'"
+    else
+      where="${where} AND commands.argv = '$(sql_escape "$cmd")'"
+    fi
+  fi
+
+  if [[ -n $forget ]]; then
+    limit=""
+  fi
+
+    query=$(<<- EOT
+  SELECT
+  ${selcols}
+  FROM
+  (
+    SELECT
+    ${cols}
+    FROM history
+    LEFT JOIN commands ON history.command_id = commands.id
+    LEFT JOIN places ON history.place_id = places.id
+    LEFT JOIN users ON history.user_id = users.id
+    WHERE ${where}
+    ORDER BY start_time DESC
+    ${limit:+limit $limit}
+  )
+  ORDER BY start_time ASC;
+EOT
+);
+
+  if [[ -n $debug ]]; then
+
+    echo "$query";
+
+  else
+
+    count_query=$(<<- EOT
+  SELECT COUNT(*)
+  FROM history
+  LEFT JOIN commands ON history.command_id = commands.id
+  LEFT JOIN places ON history.place_id = places.id
+  LEFT JOIN users ON history.user_id = users.id
+  where ${where};
+EOT
+);
+
+    count=$(__zhist_query "$count_query" | tail -n +2)
+
+
+  __zhist_query "$query" | column -t -s $SEP | less -SXF
+
+    if [[ $limit == [0-9]* && $limit -lt $count ]]; then
+      echo "(showing $limit of $count results)";
+    fi
+
+  fi
+
+  if [[ -n $forget ]]; then
+
+    read -rq "REPLY?Forget all these results? [y/n] "
+
+    if [[ $REPLY =~ [yY] ]]; then
+
+      __zhist_query <<- EOF
+    DELETE FROM history
+    WHERE history.id IN (
+      SELECT history.id
+      FROM history
+      LEFT JOIN commands ON history.command_id = commands.id
+      LEFT JOIN places ON history.place_id = places.id
+      LEFT JOIN users ON history.user_id = users.id
+      WHERE ${where}
+    );
+    DELETE FROM commands
+    WHERE commands.id NOT IN (
+      SELECT DISTINCT history.command_id FROM history
+    );
+EOF
+
+    fi
+  fi
+
+}
+
+zhist "$@"
