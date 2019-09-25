@@ -11,7 +11,7 @@ typeset -g __ZHIST_INPUT_PIPE="${__ZHIST_DIR}/.zsh-history${LOGIN_ID}.pipe"
 typeset -g __ZHIST_REGISTERED_SHELLS="${__ZHIST_DIR}/.zsh-history${LOGIN_ID}.shells"
 
 typeset -g __ZHIST_SESSION __ZHIST_QUERY_LOG __ZHIST_PIPE_FD
-typeset -gi __ZHIST_RAN_CMD __ZHIST_DAEMON_PID
+typeset -g __ZHIST_RAN_CMD __ZHIST_DAEMON_PID
 
 typeset -ga __ZHIST_IGNORE_COMMANDS
 __ZHIST_IGNORE_COMMANDS=("^ls$" "^cd$" "^ " "^zhist" "^$")
