@@ -70,7 +70,7 @@ __zhist_check () {
   if ! print -nu "${__ZHIST_PIPE_FD}" ; then
     unset "${__ZHIST_PIPE_FD}" 2> /dev/null
     exec {__ZHIST_PIPE_FD}<> "${__ZHIST_INPUT_PIPE}"
-	fi
+  fi
 
   if ! __zhist_daemon_check; then
     __zhist_daemon_start;
@@ -89,23 +89,23 @@ __zhist_createdb () {
 
   __zhist_query <<- EOF
   CREATE TABLE commands (
-		id integer primary key autoincrement,
+    id integer primary key autoincrement,
     argv TEXT,
     UNIQUE(argv) ON CONFLICT IGNORE
   );
   CREATE TABLE places (
-		id integer primary key autoincrement,
+    id integer primary key autoincrement,
     host TEXT,
     dir TEXT,
     UNIQUE(host, dir) ON CONFLICT IGNORE
   );
   CREATE TABLE users (
-		id integer primary key autoincrement,
+    id integer primary key autoincrement,
     user TEXT,
     UNIQUE(user) ON CONFLICT IGNORE
   );
   CREATE TABLE history (
-		id integer primary key autoincrement,
+    id integer primary key autoincrement,
     session int,
     command_id int REFERENCES commands (id),
     place_id int REFERENCES places (id),
@@ -196,10 +196,10 @@ __zhist_daemon_check() {
     return 1;
   fi
 
-	# If this user doesn't have write perms, don't try to manage daemon
-	if [ ! -w "${__ZHIST_PID_FILE}" ]; then
-		return 0;
-	fi
+  # If this user doesn't have write perms, don't try to manage daemon
+  if [ ! -w "${__ZHIST_PID_FILE}" ]; then
+    return 0;
+  fi
 
   if [[ -z "$__ZHIST_DAEMON_PID" ]]; then
     read -rt __ZHIST_DAEMON_PID < "${__ZHIST_PID_FILE}"
@@ -211,7 +211,7 @@ __zhist_daemon_check() {
 
   if ! \kill -0 "${__ZHIST_DAEMON_PID}" &> /dev/null ; then
 
-    # If pid isn't running, double check pid value in case it was changed by another shell
+    # If pid isnt running, double check pid value in case it was changed by another shell
     read -rt __ZHIST_DAEMON_PID < "${__ZHIST_PID_FILE}"
 
     if ! \kill -0 "$__ZHIST_DAEMON_PID" &> /dev/null; then

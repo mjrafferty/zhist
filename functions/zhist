@@ -2,9 +2,9 @@
 
 __zhist_usage () {
 
-	cat <<- EOF
+  cat <<- EOF
 
-	Usage: zhist [--host] [--in] [--at] [-s n]+* [--from] [--until] [--limit] [--forget] [--detail]
+  Usage: zhist [--host] [--in] [--at] [-s n]+* [--from] [--until] [--limit] [--forget] [--detail]
 
     --host    print the host column and show all hosts (otherwise current host)
     --host x  find entries from host x
@@ -27,29 +27,29 @@ EOF
 
 zhist () {
 
-	__zhist_check
+  __zhist_check
 
   ARGA=("$@");
 
-	local selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
+  local selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
 
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
-	selcols="${timecol}, session AS Session, dir as Directory, user as User"
-	cols="session, places.dir, users.user, commands.argv, start_time"
+  selcols="${timecol}, session AS Session, dir as Directory, user as User"
+  cols="session, places.dir, users.user, commands.argv, start_time"
   where="1=1"
 
-	if [[ -p /dev/stdout ]]; then
-		limit=""
-	else
-		limit="${$((LINES - 6)):-25}"
-	fi
+  if [[ -p /dev/stdout ]]; then
+    limit=""
+  else
+    limit="${$((LINES - 6)):-25}"
+  fi
 
-	for ((x=1;x<=$#ARGA;x++)); do
-		case "${ARGA[x]}" in
-			"-h"|"--help")
-				__zhist_usage;
-				return;
-				;;
+  for ((x=1;x<=$#ARGA;x++)); do
+    case "${ARGA[x]}" in
+      "-h"|"--help")
+        __zhist_usage;
+        return;
+        ;;
       "-H"|"--host")
         i=1
         while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
@@ -80,38 +80,38 @@ zhist () {
         ((x--));
         where="${where}${dirwhere:+ and (${dirwhere})}"
         ;;
-			"-f"|"--from")
+      "-f"|"--from")
         if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
           from=${ARGA[x]};
         else
           ((x--));
           echo "No or bad value for from";
         fi
-				case $from in
+        case $from in
           "today") from="$(date "+%s" --date="$(date "+%F")")" ;;
           "yesterday") from="$(($(date "+%s" --date="$(date "+%F")") - 86400 ))" ;;
           *) from="$(date "+%s" --date="${from}")" ;;
         esac
         where="${where} AND start_time >= $from"
-				;;
-			"-u"|"--until")
+        ;;
+      "-u"|"--until")
         if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
           until=${ARGA[x]};
         else
           ((x--));
           echo "No or bad value for until";
         fi
-				case $until in
+        case $until in
           "today") until="$(date "+%s" --date="$(date "+%F")")" ;;
           "yesterday") until="$(($(date "+%s" --date="$(date "+%F")") - 86400 ))" ;;
           *) until="$(date "+%s" --date="${until}")" ;;
-				esac
-				where="${where} AND start_time <= $until"
-				;;
-			"-D"|"--debug")
-				debug=1
-				;;
-			"-s"|"--session")
+        esac
+        where="${where} AND start_time <= $until"
+        ;;
+      "-D"|"--debug")
+        debug=1
+        ;;
+      "-s"|"--session")
         if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
           where="${where} AND session=\"${ARGA[x]}\""
         else
@@ -119,17 +119,17 @@ zhist () {
           echo "No or bad value for session";
         fi
         ;;
-			"-d"|"--detail")
-				cols="${cols}, exit_status, duration "
-				selcols="${selcols}, exit_status AS \"Return Code\",duration AS Duration "
-				;;
-			"--forget")
-				forget=1
-				;;
-			"-e"|"--exact")
-				exact=1
-				;;
-			"-l"|"--limit")
+      "-d"|"--detail")
+        cols="${cols}, exit_status, duration "
+        selcols="${selcols}, exit_status AS \"Return Code\",duration AS Duration "
+        ;;
+      "--forget")
+        forget=1
+        ;;
+      "-e"|"--exact")
+        exact=1
+        ;;
+      "-l"|"--limit")
         if [[ "${ARGA[++x]}" == [0-9]* ]]; then
           limit=${ARGA[x]};
         else
@@ -137,11 +137,11 @@ zhist () {
           echo "No or bad value for limit";
         fi
         ;;
-			*)
+      *)
         cmd="${ARGA[x]}"
-				;;
-		esac
-	done
+        ;;
+    esac
+  done
 
   selcols="${selcols}, argv as Command"
 
