@@ -31,7 +31,7 @@ zhist () {
 
   ARGA=("$@");
 
-  local selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
+  local arg selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
 
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
   selcols="${timecol}, session AS Session, dir as Directory, user as User"
@@ -69,13 +69,15 @@ zhist () {
         ;;
       "-i"|"--in")
         while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
-          dirwhere="${dirwhere}${dirwhere:+ or }places.dir LIKE '$(sql_escape "${ARGA[x]}")%'"
+          arg="${(S)ARGA[x]//'/''}"
+          dirwhere="${dirwhere}${dirwhere:+ or }places.dir LIKE '${arg}%'"
         done
         where="${where}${dirwhere:+ and (${dirwhere})}"
         ;;
       "-a"|"--at")
         while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
-          dirwhere="${dirwhere}${dirwhere:+ or }places.dir = '$(sql_escape "${ARGA[x]}")'"
+          arg="${(S)ARGA[x]//'/''}"
+          dirwhere="${dirwhere}${dirwhere:+ or }places.dir = '${arg}'"
         done
         ((x--));
         where="${where}${dirwhere:+ and (${dirwhere})}"
@@ -150,10 +152,11 @@ zhist () {
   fi
 
   if [[ -n "$cmd" ]]; then
+    cmd="${(S)cmd//'/''}"
     if [[ -z $exact ]]; then
-      where="${where} AND commands.argv glob '*$(sql_escape "$cmd")*'"
+      where="${where} AND commands.argv glob '*${cmd}*'"
     else
-      where="${where} AND commands.argv = '$(sql_escape "$cmd")'"
+      where="${where} AND commands.argv = '${cmd}'"
     fi
   fi
 
@@ -198,8 +201,7 @@ EOT
 
     count=$(__zhist_query "$count_query" | tail -n +2)
 
-
-  __zhist_query "$query" | column -t -s $SEP | less -SXF
+    __zhist_query "$query" | column -t -s $SEP | less -SXF
 
     if [[ $limit == [0-9]* && $limit -lt $count ]]; then
       echo "(showing $limit of $count results)";
