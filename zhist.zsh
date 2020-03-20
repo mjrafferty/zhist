@@ -22,8 +22,6 @@ else
   __ZHIST_QUERY_LOG="/dev/null"
 fi
 
-SEP=$'\x1f'
-
 __zhist_init() {
 
   setopt multios
@@ -136,7 +134,9 @@ __zhist_exit () {
 
 __zhist_query () {
 
-  sqlite3 -header -separator "$SEP" "${__ZHIST_FILE}" "$@"
+  local sep=$'\x1f'
+
+  sqlite3 -header -separator "$sep" "${__ZHIST_FILE}" "$@"
 
   if [[ "$?" -ne 0 ]]; then
     echo "error in $*";
@@ -196,7 +196,7 @@ __zhist_daemon_check() {
     return 1;
   fi
 
-  # If this user doesn't have write perms, don't try to manage daemon
+  # If this user doesnt have write perms, dont try to manage daemon
   if [ ! -w "${__ZHIST_PID_FILE}" ]; then
     return 0;
   fi

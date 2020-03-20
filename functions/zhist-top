@@ -4,6 +4,8 @@ zhist-top () {
 
   local field label;
 
+  local sep=$'\x1f'
+
   __zhist_check;
 
   1="${1:-cmd}"
@@ -27,7 +29,7 @@ zhist-top () {
       ;;
   esac
 
-  __zhist_query <<- EOF | column -t -s $SEP
+  __zhist_query <<- EOF | column -t -s $sep
   SELECT
     COUNT(*) AS Count,
     $field AS "$label"

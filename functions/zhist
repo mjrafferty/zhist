@@ -33,6 +33,8 @@ zhist () {
 
   local arg selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
 
+  local sep=$'\x1f'
+
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
   selcols="${timecol}, session AS Session, dir as Directory, user as User"
   cols="session, places.dir, users.user, commands.argv, start_time"
@@ -201,7 +203,7 @@ EOT
 
     count=$(__zhist_query "$count_query" | tail -n +2)
 
-    __zhist_query "$query" | column -t -s $SEP | less -SXF
+    __zhist_query "$query" | column -t -s $sep | less -SXF
 
     if [[ $limit == [0-9]* && $limit -lt $count ]]; then
       echo "(showing $limit of $count results)";
