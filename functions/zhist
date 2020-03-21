@@ -4,22 +4,28 @@ __zhist_usage () {
 
   cat <<- EOF
 
-  Usage: zhist [--host] [--in] [--at] [-s n]+* [--from] [--until] [--limit] [--forget] [--detail]
+  Usage: zhist [OPTIONS] [SEARCH STRING]
 
-    --host    print the host column and show all hosts (otherwise current host)
-    --host x  find entries from host x
-    --in      find only entries run in the current dir or below
-    --in x    find only entries in directory x or below
-    --at      like --in, but excluding subdirectories
-    -s n      only show session n
-    -d        debug output query that will be run
-    --detail  show details
-    --forget  forget everything which matches in the history
-    --exact   don't match substrings
-    --sep x   print with separator x, and don't tabulate
-    --from x  only show commands after date x (sqlite date parser)
-    --until x only show commands before date x (sqlite date parser)
-    --limit n only show n rows. defaults to $LINES or 25
+    -d, --detail       Show return codes and durations
+    -l, --limit n      Only show n rows. defaults to $LINES or 25
+
+    -e, --exact        Don't match substrings
+
+    -H, --host         Print the host column and show all hosts (otherwise current host)
+    -H, --host x       Find entries from host x
+
+    -f, --from x       Only show commands after date x
+    -u, --until x      Only show commands before date x
+    -s, --session n    Only show session n
+
+    -i, --in           Find only entries run in the current dir or below
+    -i, --in x         Find only entries in directory x or below
+    -a, --at           Like --in, but excluding subdirectories
+
+    -D, --debug        Debug output query that will be run
+    -h, --help         Show this help text.
+
+    --forget          Forget everything which matches in the history
 
 EOF
 
@@ -36,7 +42,7 @@ zhist () {
   local sep=$'\x1f'
 
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
-  selcols="${timecol}, session AS Session, dir as Directory, user as User"
+  selcols="${timecol}, session AS Session, user as User, dir as Directory"
   cols="session, places.dir, users.user, commands.argv, start_time"
   where="1=1"
 
