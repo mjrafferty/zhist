@@ -5,19 +5,19 @@ which sqlite3 >/dev/null 2>&1 || return;
 typeset -g __ZHIST_DIR="${(%):-%N}"
 __ZHIST_DIR="${__ZHIST_DIR%/*}"
 
-typeset -g __ZHIST_FILE="${HOME}/.zsh-history${LOGIN_ID}.db"
-typeset -g __ZHIST_PID_FILE="${__ZHIST_DIR}/.zsh-history${LOGIN_ID}.pid"
-typeset -g __ZHIST_INPUT_PIPE="${__ZHIST_DIR}/.zsh-history${LOGIN_ID}.pipe"
-typeset -g __ZHIST_REGISTERED_SHELLS="${__ZHIST_DIR}/.zsh-history${LOGIN_ID}.shells"
+typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist${LOGIN_ID}.db"
 
-typeset -g __ZHIST_SESSION __ZHIST_QUERY_LOG __ZHIST_PIPE_FD
-typeset -g __ZHIST_RAN_CMD __ZHIST_DAEMON_PID
+typeset -g __ZHIST_PID_FILE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist${LOGIN_ID}.pid"
+typeset -g __ZHIST_PIPE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist${LOGIN_ID}.pipe"
+typeset -g __ZHIST_SHELLS="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist${LOGIN_ID}.shells"
+
+typeset -g __ZHIST_SESSION __ZHIST_QUERY_LOG __ZHIST_PIPE_FD __ZHIST_RAN_CMD __ZHIST_DAEMON_PID
 
 typeset -ga __ZHIST_IGNORE_COMMANDS
 __ZHIST_IGNORE_COMMANDS=("^ls$" "^cd$" "^ " "^zhist" "^$")
 
 if [[ -n "$ZHIST_ENABLE_LOG" && "$ZHIST_ENABLE_LOG" == 1 ]]; then
-  __ZHIST_QUERY_LOG="${HOME}/.zsh-history${LOGIN_ID}.log"
+  __ZHIST_QUERY_LOG="${XDG_DATA_HOME:-$HOME}/zhist${LOGIN_ID}.log"
 else
   __ZHIST_QUERY_LOG="/dev/null"
 fi
@@ -39,35 +39,35 @@ __zhist_init() {
   __zhist_session_id
 
   if [[ -w "${__ZHIST_DIR}" ]]; then
-    echo "$$" >> "${__ZHIST_REGISTERED_SHELLS}"
+    echo "$$" >> "${__ZHIST_SHELLS}"
   fi
 
 }
 
 __zhist_check () {
 
-  if  [[ ! -s "${__ZHIST_FILE}" ]]; then
+  if  [[ ! -s "${__ZHIST_DB}" ]]; then
     __zhist_createdb;
     __zhist_daemon_stop;
   fi
 
-  if [[ ! -e "${__ZHIST_INPUT_PIPE}" ]]; then
+  if [[ ! -e "${__ZHIST_PIPE}" ]]; then
     if [[ -n "${__ZHIST_PIPE_FD}" ]]; then
       exec {__ZHIST_PIPE_FD}>&-
       unset "${__ZHIST_PIPE_FD}"
     fi
     __zhist_daemon_stop;
-    mkfifo "${__ZHIST_INPUT_PIPE}"
-    chmod 600 "${__ZHIST_INPUT_PIPE}";
+    mkfifo "${__ZHIST_PIPE}"
+    chmod 600 "${__ZHIST_PIPE}";
   fi
 
   if [[ -z "${__ZHIST_PIPE_FD}" ]]; then
-    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_INPUT_PIPE}"
+    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
   fi
 
   if ! print -nu "${__ZHIST_PIPE_FD}" ; then
     unset "${__ZHIST_PIPE_FD}" 2> /dev/null
-    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_INPUT_PIPE}"
+    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
   fi
 
   if ! __zhist_daemon_check; then
@@ -78,12 +78,12 @@ __zhist_check () {
 
 __zhist_createdb () {
 
-  if [[ -s "${HOME}/.zsh-history.db" ]]; then
-    mv "${HOME}/.zsh-history.db" "${HOME}/.zsh-history${LOGIN_ID}.db"
+  if [[ -s "${XDG_DATA_HOME:-$HOME}/zhist.db" ]]; then
+    mv "${XDG_DATA_HOME:-$HOME}/zhist.db" "${__ZHIST_DB}"
     return;
   fi
 
-  mkdir -p "$(dirname "${__ZHIST_FILE}")"
+  mkdir -p "$(dirname "${__ZHIST_DB}")"
 
   __zhist_query <<- EOF
   CREATE TABLE commands (
@@ -118,14 +118,14 @@ EOF
 
 __zhist_exit () {
 
-  if [[ -w "${__ZHIST_REGISTERED_SHELLS}" ]]; then
+  if [[ -w "${__ZHIST_SHELLS}" ]]; then
 
-    sed -i "/^$$\$/d" "${__ZHIST_REGISTERED_SHELLS}"
+    sed -i "/^$$\$/d" "${__ZHIST_SHELLS}"
 
-    if [[ ! -s "${__ZHIST_REGISTERED_SHELLS}" ]]; then
+    if [[ ! -s "${__ZHIST_SHELLS}" ]]; then
       __zhist_daemon_stop;
-      rm "${__ZHIST_INPUT_PIPE}" &> /dev/null
-      rm "${__ZHIST_REGISTERED_SHELLS}" &> /dev/null
+      rm "${__ZHIST_PIPE}" &> /dev/null
+      rm "${__ZHIST_SHELLS}" &> /dev/null
     fi
 
   fi
@@ -136,7 +136,7 @@ __zhist_query () {
 
   local sep=$'\x1f'
 
-  sqlite3 -header -separator "$sep" "${__ZHIST_FILE}" "$@"
+  sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
 
   if [[ "$?" -ne 0 ]]; then
     echo "error in $*";
@@ -168,7 +168,7 @@ __zhist_daemon_start () {
 
   __zhist_daemon_stop;
 
-  sqlite3 "${__ZHIST_FILE}" <&"${__ZHIST_PIPE_FD}" &!
+  sqlite3 "${__ZHIST_DB}" <&"${__ZHIST_PIPE_FD}" &!
 
   __ZHIST_DAEMON_PID="$!"
 
