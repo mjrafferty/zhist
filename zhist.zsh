@@ -137,9 +137,10 @@ __zhist_query () {
   local -a queryopts
   queryopts=(
     ".mode column"
+    ".headers ON"
   )
 
-  echo -e "${queryopts[@]}\n$@" | sqlite3 "${__ZHIST_DB}"
+  echo -e "${(F)queryopts[@]}\n$@" | sqlite3 "${__ZHIST_DB}"
 
   if [[ "$?" -ne 0 ]]; then
     echo "error in $*";
