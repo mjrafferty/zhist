@@ -134,9 +134,12 @@ __zhist_exit () {
 
 __zhist_query () {
 
-  local sep=$'\x1f'
+  local -a queryopts
+  queryopts=(
+    ".mode column"
+  )
 
-  sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+  echo -e "${queryopts[@]}\n$@" | sqlite3 "${__ZHIST_DB}"
 
   if [[ "$?" -ne 0 ]]; then
     echo "error in $*";

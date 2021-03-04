@@ -2,9 +2,7 @@
 
 zhist-top () {
 
-  local field label;
-
-  local sep=$'\x1f'
+  local field label query;
 
   __zhist_check;
 
@@ -29,7 +27,7 @@ zhist-top () {
       ;;
   esac
 
-  __zhist_query <<- EOF | column -t -s $sep
+  query=$(<<- EOT
   SELECT
     COUNT(*) AS Count,
     $field AS "$label"
@@ -39,7 +37,10 @@ zhist-top () {
   GROUP BY $field
   ORDER BY COUNT(*) DESC
   LIMIT 20;
-EOF
+EOT
+);
+  
+  __zhist_query "${query}"
 
 }
 
