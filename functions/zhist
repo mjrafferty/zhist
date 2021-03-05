@@ -43,7 +43,7 @@ zhist () {
 
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
   selcols="${timecol}, session AS Session, user as User, dir as Directory"
-  cols="session, places.dir, users.user, commands.argv, start_time"
+  cols="session, substr(places.dir,-50,50) as dir, users.user, substr(replace(commands.argv,X'0A','\n'),1,100) as argv, start_time"
   where="1=1"
 
   if [[ -p /dev/stdout ]]; then

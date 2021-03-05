@@ -32,7 +32,7 @@ zhist-top () {
   __zhist_query <<- EOF | column -t -s $sep
   SELECT
     COUNT(*) AS Count,
-    $field AS "$label"
+    substr(replace($field,X'0A','\n'),1,150) as "$label"
   FROM history
   LEFT JOIN commands ON history.command_id=commands.id
   LEFT JOIN places ON history.place_id=places.id
