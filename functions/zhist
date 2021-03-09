@@ -33,15 +33,15 @@ EOF
 
 zhist () {
 
-  __zhist_check
-
   ARGA=("$@");
 
   local arg selcols cols where limit cmd forget exact hostwhere dirwhere debug count timecol until from query count_query;
 
+  local sep=$'\x1f'
+
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
   selcols="${timecol}, session AS Session, user as User, dir as Directory"
-  cols="session, places.dir, users.user, commands.argv, start_time"
+  cols="session, substr(places.dir,-50,50) as dir, users.user, substr(replace(commands.argv,X'0A','\n'),1,100) as argv, start_time"
   where="1=1"
 
   if [[ -p /dev/stdout ]]; then
@@ -205,12 +205,12 @@ EOT
 EOT
 );
 
-    count=$(__zhist_query "$count_query" | tail -n +3)
+    count=$(__zhist_query "$count_query" | tail -n +2)
 
-    __zhist_query "$query" | less -SXF
+    __zhist_query "$query" | column -t -s $sep | less -SXF
 
     if [[ $limit == [0-9]* && $limit -lt $count ]]; then
-      echo "(showing $limit of ${count// /} results)";
+      echo "(showing $limit of $count results)";
     fi
 
   fi
@@ -221,7 +221,7 @@ EOT
 
     if [[ $REPLY =~ [yY] ]]; then
 
-      query=$(<<- EOT
+      __zhist_query <<- EOF
     DELETE FROM history
     WHERE history.id IN (
       SELECT history.id
@@ -235,9 +235,7 @@ EOT
     WHERE commands.id NOT IN (
       SELECT DISTINCT history.command_id FROM history
     );
-EOT
-);
-    __zhist_query "$query"
+EOF
 
     fi
   fi

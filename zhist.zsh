@@ -52,18 +52,12 @@ __zhist_check () {
   fi
 
   if [[ ! -e "${__ZHIST_PIPE}" ]]; then
-    if [[ -n "${__ZHIST_PIPE_FD}" ]]; then
-      exec {__ZHIST_PIPE_FD}>&-
-      unset "${__ZHIST_PIPE_FD}"
-    fi
     __zhist_daemon_stop;
     mkfifo "${__ZHIST_PIPE}"
     chmod 600 "${__ZHIST_PIPE}";
   fi
 
-  if [[ -z "${__ZHIST_PIPE_FD}" ]]; then
-    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
-  fi
+  exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
 
   if ! print -nu "${__ZHIST_PIPE_FD}" ; then
     unset "${__ZHIST_PIPE_FD}" 2> /dev/null
@@ -134,13 +128,9 @@ __zhist_exit () {
 
 __zhist_query () {
 
-  local -a queryopts
-  queryopts=(
-    ".mode column"
-    ".headers ON"
-  )
+  local sep=$'\x1f'
 
-  echo -e "${(F)queryopts[@]}\n$@" | sqlite3 "${__ZHIST_DB}"
+  sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
 
   if [[ "$?" -ne 0 ]]; then
     echo "error in $*";
@@ -234,6 +224,8 @@ __zhist_insert_stop () {
 
   if (( __ZHIST_RAN_CMD == 1 )); then
 
+  __zhist_check || return;
+
     >&"$__ZHIST_PIPE_FD" >>! "$__ZHIST_QUERY_LOG" <<- EOF
   UPDATE history SET
   exit_status = ${retval},
@@ -247,6 +239,8 @@ __zhist_insert_stop () {
   );
 EOF
 
+  exec {__ZHIST_PIPE_FD}>&-
+
   fi
 
   __ZHIST_RAN_CMD=0
@@ -257,8 +251,6 @@ __zhist_insert_start() {
 
   local cmd;
 
-  __zhist_check || return;
-
   cmd="${1}"
 
   for boring in "${__ZHIST_IGNORE_COMMANDS[@]}"; do
@@ -268,6 +260,8 @@ __zhist_insert_start() {
   done
 
   __ZHIST_RAN_CMD=1
+
+  __zhist_check || return;
 
   cmd="${(S)cmd//'/''}"
 
@@ -287,6 +281,8 @@ __zhist_insert_start() {
     AND users.user = '${USER}'
     AND places.dir = '${PWD}';
 EOF
+
+  exec {__ZHIST_PIPE_FD}>&-
 
 }
 
