@@ -7,7 +7,7 @@ __ZHIST_DIR="${__ZHIST_DIR%/*}"
 
 typeset -g __ZHIST_HOST="${(%):-%m}"
 
-typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist-${DEV_MODE:-__ZHIST_HOST}.db"
+typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist-${DEV_MODE:-${__ZHIST_HOST}}.db"
 
 typeset -g __ZHIST_PID_FILE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.pid"
 typeset -g __ZHIST_PIPE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.pipe"
