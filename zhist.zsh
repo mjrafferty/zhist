@@ -7,7 +7,7 @@ __ZHIST_DIR="${__ZHIST_DIR%/*}"
 
 typeset -g __ZHIST_HOST="${(%):-%m}"
 
-typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist-${__ZHIST_HOST}.db"
+typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist-${DEV_MODE:-__ZHIST_HOST}.db"
 
 typeset -g __ZHIST_PID_FILE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.pid"
 typeset -g __ZHIST_PIPE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.pipe"
@@ -60,11 +60,6 @@ __zhist_check () {
   fi
 
   exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
-
-  if ! print -nu "${__ZHIST_PIPE_FD}" ; then
-    unset "${__ZHIST_PIPE_FD}" 2> /dev/null
-    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
-  fi
 
   if ! __zhist_daemon_check; then
     __zhist_daemon_start;
@@ -132,7 +127,19 @@ __zhist_query () {
 
   local sep=$'\x1f'
 
-  sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+  case "$1" in
+    "horizontal")
+      shift;
+      sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+      ;;
+    "vertical")
+      shift;
+      sqlite3 -line -header "${__ZHIST_DB}" "$@"
+      ;;
+    *)
+      sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+      ;;
+  esac
 
   if [[ "$?" -ne 0 ]]; then
     echo "error in $*";
