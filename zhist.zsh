@@ -5,11 +5,13 @@ which sqlite3 >/dev/null 2>&1 || return;
 typeset -g __ZHIST_DIR="${(%):-%N}"
 __ZHIST_DIR="${__ZHIST_DIR%/*}"
 
-typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist${LOGIN_ID}.db"
+typeset -g __ZHIST_HOST="${(%):-%m}"
 
-typeset -g __ZHIST_PID_FILE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist${LOGIN_ID}.pid"
-typeset -g __ZHIST_PIPE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist${LOGIN_ID}.pipe"
-typeset -g __ZHIST_SHELLS="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist${LOGIN_ID}.shells"
+typeset -g __ZHIST_DB="${XDG_DATA_HOME:-$HOME}/zhist-${__ZHIST_HOST}.db"
+
+typeset -g __ZHIST_PID_FILE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.pid"
+typeset -g __ZHIST_PIPE="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.pipe"
+typeset -g __ZHIST_SHELLS="${XDG_RUNTIME_DIR:-$__ZHIST_DIR}/zhist-${__ZHIST_HOST}.shells"
 
 typeset -g __ZHIST_SESSION __ZHIST_QUERY_LOG __ZHIST_PIPE_FD __ZHIST_RAN_CMD __ZHIST_DAEMON_PID
 
@@ -17,7 +19,7 @@ typeset -ga __ZHIST_IGNORE_COMMANDS
 __ZHIST_IGNORE_COMMANDS=("^ls$" "^cd$" "^ " "^zhist" "^$")
 
 if [[ -n "$ZHIST_ENABLE_LOG" && "$ZHIST_ENABLE_LOG" == 1 ]]; then
-  __ZHIST_QUERY_LOG="${XDG_DATA_HOME:-$HOME}/zhist${LOGIN_ID}.log"
+  __ZHIST_QUERY_LOG="${XDG_DATA_HOME:-$HOME}/zhist${LOGIN_ID:+-$LOGIN_ID}.log"
 else
   __ZHIST_QUERY_LOG="/dev/null"
 fi
