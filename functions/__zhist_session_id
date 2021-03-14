@@ -1,0 +1,23 @@
+# vim:ft=zsh
+
+__zhist_session_id () {
+
+  local i length random
+  local -a chars
+
+  zmodload -i zsh/mathfunc
+
+  __ZHIST_SESSION=""
+
+  length=6
+  chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+  while (( i++ < length )); do
+    random=$((1 + int( ${(c)#chars} * rand48() ) ))
+    __ZHIST_SESSION+="$chars[$random]"
+    chars[$random]=""
+  done
+
+}
+
+__zhist_session_id "$@"

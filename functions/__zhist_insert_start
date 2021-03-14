@@ -1,0 +1,47 @@
+# vim:ft=zsh
+
+__zhist_insert_start() {
+
+  local cmd;
+
+  cmd="${1}"
+
+  # Touch watch file
+  true >! "${__ZHIST_WATCH_FILE}"
+
+  __zhist_watcher_check
+
+  exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
+
+  for boring in "${__ZHIST_IGNORE_COMMANDS[@]}"; do
+    if [[ "$cmd" =~ $boring ]]; then
+      return
+    fi
+  done
+
+  __ZHIST_RAN_CMD=1
+
+  cmd="${(S)cmd//'/''}"
+
+  >&"$__ZHIST_PIPE_FD" >>! "$__ZHIST_QUERY_LOG" <<- EOF
+  INSERT INTO commands (argv)
+  VALUES ('${cmd}');
+  INSERT INTO places (host, dir)
+  VALUES ('$HOST', '${PWD}');
+  INSERT INTO users (user)
+  VALUES ('${USER}');
+  INSERT INTO history (session, command_id, place_id, user_id, start_time)
+  SELECT
+    '${__ZHIST_SESSION}', commands.id, places.id, users.id, ${EPOCHSECONDS}
+    FROM commands, places, users
+    WHERE commands.argv = '${cmd}'
+    AND places.host = '$HOST'
+    AND users.user = '${USER}'
+    AND places.dir = '${PWD}';
+EOF
+
+  exec {__ZHIST_PIPE_FD}>&-
+
+}
+
+__zhist_insert_start "$@"

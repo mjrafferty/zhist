@@ -1,0 +1,43 @@
+# vim:ft=zsh
+
+__zhist_createdb () {
+
+  if [[ -s "${XDG_DATA_HOME:-$HOME}/zhist.db" ]]; then
+    mv "${XDG_DATA_HOME:-$HOME}/zhist.db" "${__ZHIST_DB}"
+    return;
+  fi
+
+  mkdir -p "$(dirname "${__ZHIST_DB}")"
+
+  __zhist_query <<- EOF
+  CREATE TABLE commands (
+    id integer primary key autoincrement,
+    argv TEXT,
+    UNIQUE(argv) ON CONFLICT IGNORE
+  );
+  CREATE TABLE places (
+    id integer primary key autoincrement,
+    host TEXT,
+    dir TEXT,
+    UNIQUE(host, dir) ON CONFLICT IGNORE
+  );
+  CREATE TABLE users (
+    id integer primary key autoincrement,
+    user TEXT,
+    UNIQUE(user) ON CONFLICT IGNORE
+  );
+  CREATE TABLE history (
+    id integer primary key autoincrement,
+    session int,
+    command_id int REFERENCES commands (id),
+    place_id int REFERENCES places (id),
+    user_id int REFERENCES users (id),
+    exit_status INT,
+    start_time INT,
+    duration INT
+  );
+EOF
+
+}
+
+__zhist_createdb "$@"

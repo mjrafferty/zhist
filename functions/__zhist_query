@@ -1,0 +1,27 @@
+# vim:ft=zsh
+
+__zhist_query () {
+
+  local sep=$'\x1f'
+
+  case "$1" in
+    "horizontal")
+      shift;
+      sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+      ;;
+    "vertical")
+      shift;
+      sqlite3 -line -header "${__ZHIST_DB}" "$@"
+      ;;
+    *)
+      sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+      ;;
+  esac
+
+  if [[ "$?" -ne 0 ]]; then
+    echo "error in $*";
+  fi
+
+}
+
+__zhist_query "$@"

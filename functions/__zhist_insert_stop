@@ -1,0 +1,34 @@
+# vim:ft=zsh
+
+__zhist_insert_stop () {
+
+  local retval=$?
+
+  if (( __ZHIST_RAN_CMD == 1 )); then
+
+    __zhist_watcher_check
+
+    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
+
+    >&"$__ZHIST_PIPE_FD" >>! "$__ZHIST_QUERY_LOG" <<- EOF
+  UPDATE history SET
+  exit_status = ${retval},
+  duration = ${EPOCHSECONDS} - start_time
+  WHERE id = (
+    SELECT MAX(id)
+    FROM history
+    WHERE session = "${__ZHIST_SESSION}"
+    AND exit_status IS NULL
+    AND duration IS NULL
+  );
+EOF
+
+    exec {__ZHIST_PIPE_FD}>&-
+
+  fi
+
+  __ZHIST_RAN_CMD=0
+
+}
+
+__zhist_insert_stop "$@"

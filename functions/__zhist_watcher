@@ -1,0 +1,66 @@
+# vim:ft=zsh
+
+__zhist_watcher () {
+
+  emulate -LR zsh
+
+  typeset -gi SQLITE_PID=0
+
+  local -a stats
+  local -i last_check_in=0
+
+  zmodload zsh/stat 
+
+  TRAPINT TRAPKILL TRAPHUP TRAPTERM TRAPTRAP TRAPEXIT() {
+    kill "$SQLITE_PID" &> /dev/null
+    [[ -r "$__ZHIST_PIPE" ]] && rm "$__ZHIST_PIPE"
+    [[ -r "$__ZHIST_PID_FILE" ]] && rm "$__ZHIST_PID_FILE"
+    [[ -r "$__ZHIST_WATCH_FILE" ]] && rm "$__ZHIST_WATCH_FILE"
+  }
+
+  while true; do
+
+    if [[ -r "$__ZHIST_WATCH_FILE" ]]; then
+      zstat -A stats +mtime "${__ZHIST_WATCH_FILE}"
+    else
+      exit;
+    fi
+
+    if ((stats[1] > last_check_in)); then
+
+      last_check_in="${stats[1]}"
+
+    elif ((last_check_in < (EPOCHSECONDS - __ZHIST_IDLE_TIMEOUT))); then
+
+      exit;
+
+    fi
+
+    if ! \kill -0 "${SQLITE_PID}" &> /dev/null; then
+      SQLITE_PID=0
+    fi
+
+    if  [[ ! -s "${__ZHIST_DB}" ]]; then
+      __zhist_createdb;
+    fi
+
+    if [[ ! -p "${__ZHIST_PIPE}" ]]; then
+      rm "$__ZHIST_PIPE" &> /dev/null
+      mkfifo "${__ZHIST_PIPE}"
+      chmod 600 "${__ZHIST_PIPE}";
+    fi
+
+    if ((SQLITE_PID==0)); then
+      exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
+      sqlite3 "${__ZHIST_DB}" <&"${__ZHIST_PIPE_FD}" &
+      SQLITE_PID="$!"
+      exec {__ZHIST_PIPE_FD}>&-
+    fi
+
+    sleep 15
+
+  done
+
+}
+
+__zhist_watcher "$@"

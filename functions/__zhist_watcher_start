@@ -1,0 +1,19 @@
+# vim:ft=zsh
+
+__zhist_watcher_start () {
+
+  # Touch watch file
+  true >! "${__ZHIST_WATCH_FILE}"
+
+  __zhist_watcher_stop;
+
+  __zhist_watcher &!
+
+  __ZHIST_WATCHER_PID="$!"
+
+  echo "${__ZHIST_WATCHER_PID}" >| "${__ZHIST_PID_FILE}"
+  chmod 600 "$__ZHIST_PID_FILE";
+
+}
+
+__zhist_watcher_start "$@"

@@ -1,0 +1,16 @@
+# vim:ft=zsh
+
+__zhist_watcher_stop () {
+
+  if [[ -n "${__ZHIST_WATCHER_PID}" ]]; then
+    \kill "$__ZHIST_WATCHER_PID" &> /dev/null
+    unset "${__ZHIST_WATCHER_PID}"
+  fi
+
+  if [[ -e "${__ZHIST_PID_FILE}" ]]; then
+    rm "${__ZHIST_PID_FILE}" &> /dev/null
+  fi
+
+}
+
+__zhist_watcher_stop "$@"
