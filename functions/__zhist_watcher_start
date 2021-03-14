@@ -2,8 +2,11 @@
 
 __zhist_watcher_start () {
 
-  # Touch watch file
-  true >! "${__ZHIST_WATCH_FILE}"
+  if [[ ! -p "${__ZHIST_WATCH_FILE}" ]]; then
+    rm "$__ZHIST_WATCH_FILE" &> /dev/null
+    mkfifo "${__ZHIST_WATCH_FILE}"
+    chmod 600 "${__ZHIST_WATCH_FILE}";
+  fi
 
   __zhist_watcher_stop;
 

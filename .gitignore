@@ -1,3 +1,1 @@
-zhist*.pipe
-zhist*.shells
-zhist*.pid
+zhist/*

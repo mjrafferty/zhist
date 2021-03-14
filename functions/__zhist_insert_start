@@ -6,14 +6,13 @@ __zhist_insert_start() {
 
   cmd="${1}"
 
-  # Touch watch file
-  true >! "${__ZHIST_WATCH_FILE}"
+  echo >! "${__ZHIST_WATCH_FILE}"
 
   __zhist_watcher_check
 
   exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
 
-  for boring in "${__ZHIST_IGNORE_COMMANDS[@]}"; do
+  for boring in "${ZHIST_IGNORE_COMMANDS[@]}"; do
     if [[ "$cmd" =~ $boring ]]; then
       return
     fi
@@ -23,7 +22,7 @@ __zhist_insert_start() {
 
   cmd="${(S)cmd//'/''}"
 
-  >&"$__ZHIST_PIPE_FD" >>! "$__ZHIST_QUERY_LOG" <<- EOF
+  >&"$__ZHIST_PIPE_FD" >>! "$ZHIST_QUERY_LOG" <<- EOF
   INSERT INTO commands (argv)
   VALUES ('${cmd}');
   INSERT INTO places (host, dir)

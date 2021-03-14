@@ -3,11 +3,11 @@
 __zhist_createdb () {
 
   if [[ -s "${XDG_DATA_HOME:-$HOME}/zhist.db" ]]; then
-    mv "${XDG_DATA_HOME:-$HOME}/zhist.db" "${__ZHIST_DB}"
+    mv "${XDG_DATA_HOME:-$HOME}/zhist.db" "${ZHIST_DB}"
     return;
   fi
 
-  mkdir -p "$(dirname "${__ZHIST_DB}")"
+  mkdir -p "$(dirname "${ZHIST_DB}")"
 
   __zhist_query <<- EOF
   CREATE TABLE commands (

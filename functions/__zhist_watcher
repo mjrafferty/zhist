@@ -5,6 +5,7 @@ __zhist_watcher () {
   emulate -LR zsh
 
   typeset -gi SQLITE_PID=0
+  typeset -gi DB_INODE=0
 
   local -a stats
   local -i last_check_in=0
@@ -21,43 +22,87 @@ __zhist_watcher () {
   while true; do
 
     if [[ -r "$__ZHIST_WATCH_FILE" ]]; then
+
+      if [[ ! -p "${__ZHIST_WATCH_FILE}" ]]; then
+        rm "$__ZHIST_WATCH_FILE" &> /dev/null
+        mkfifo "${__ZHIST_WATCH_FILE}"
+        chmod 600 "${__ZHIST_WATCH_FILE}";
+      fi
+
       zstat -A stats +mtime "${__ZHIST_WATCH_FILE}"
+
     else
       exit;
     fi
 
     if ((stats[1] > last_check_in)); then
-
       last_check_in="${stats[1]}"
-
-    elif ((last_check_in < (EPOCHSECONDS - __ZHIST_IDLE_TIMEOUT))); then
-
+    elif ((last_check_in < (EPOCHSECONDS - ZHIST_IDLE_TIMEOUT))); then
       exit;
-
     fi
 
     if ! \kill -0 "${SQLITE_PID}" &> /dev/null; then
       SQLITE_PID=0
     fi
 
-    if  [[ ! -s "${__ZHIST_DB}" ]]; then
+    if  [[ ! -s "${ZHIST_DB}" ]]; then
+
       __zhist_createdb;
+
+      DB_INODE=0
+
+      if ((SQLITE_PID!=0)); then
+        kill "$SQLITE_PID" &> /dev/null
+        SQLITE_PID=0
+      fi
+
     fi
 
+    zstat -A stats +inode "${ZHIST_DB}"
+
+    if ((DB_INODE=0)); then
+
+      DB_INODE="${stats[1]}"
+
+    elif ((DB_INODE != stats[1])); then
+
+      DB_INODE="${stats[1]}"
+
+      if ((SQLITE_PID!=0)); then
+        kill "$SQLITE_PID" &> /dev/null
+        SQLITE_PID=0
+      fi
+
+    fi
+
+
     if [[ ! -p "${__ZHIST_PIPE}" ]]; then
+
       rm "$__ZHIST_PIPE" &> /dev/null
       mkfifo "${__ZHIST_PIPE}"
       chmod 600 "${__ZHIST_PIPE}";
+
+      if ((SQLITE_PID!=0)); then
+        kill "$SQLITE_PID" &> /dev/null
+        SQLITE_PID=0
+      fi
+
     fi
 
     if ((SQLITE_PID==0)); then
+
       exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
-      sqlite3 "${__ZHIST_DB}" <&"${__ZHIST_PIPE_FD}" &
+
+      sqlite3 "${ZHIST_DB}" <&"${__ZHIST_PIPE_FD}" &
       SQLITE_PID="$!"
+
       exec {__ZHIST_PIPE_FD}>&-
+
     fi
 
-    sleep 15
+    exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
+    read -u "$watch_fd" -t 15
+    exec {watch_fd}>&-
 
   done
 

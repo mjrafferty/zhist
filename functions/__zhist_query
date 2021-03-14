@@ -7,14 +7,14 @@ __zhist_query () {
   case "$1" in
     "horizontal")
       shift;
-      sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+      sqlite3 -header -separator "$sep" "${ZHIST_DB}" "$@"
       ;;
     "vertical")
       shift;
-      sqlite3 -line -header "${__ZHIST_DB}" "$@"
+      sqlite3 -line -header "${ZHIST_DB}" "$@"
       ;;
     *)
-      sqlite3 -header -separator "$sep" "${__ZHIST_DB}" "$@"
+      sqlite3 -header -separator "$sep" "${ZHIST_DB}" "$@"
       ;;
   esac
 
