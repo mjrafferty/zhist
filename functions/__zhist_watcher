@@ -11,7 +11,7 @@ __zhist_watcher () {
 
   zmodload zsh/stat 
 
-  TRAPINT TRAPKILL TRAPHUP TRAPTERM TRAPTRAP TRAPEXIT() {
+  TRAPEXIT TRAPHUP TRAPINT TRAPQUIT TRAPABRT TRAPKILL TRAPTERM () {
     kill "$SQLITE_PID" &> /dev/null
     [[ -r "$__ZHIST_PIPE" ]] && rm "$__ZHIST_PIPE"
     [[ -r "$__ZHIST_PID_FILE" ]] && rm "$__ZHIST_PID_FILE"
