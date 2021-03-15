@@ -60,7 +60,7 @@ __zhist_watcher () {
 
     zstat -A stats +inode "${ZHIST_DB}"
 
-    if ((DB_INODE=0)); then
+    if ((DB_INODE==0)); then
 
       DB_INODE="${stats[1]}"
 
