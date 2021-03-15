@@ -2,29 +2,26 @@
 
 __zhist_watcher_check () {
 
-  if [[ ! -s "${__ZHIST_PID_FILE}" ]]; then
+  if [[ -z "$__ZHIST_WATCHER_PID" && -r "${__ZHIST_PID_FILE}" ]]; then
+    read -rt __ZHIST_WATCHER_PID < "${__ZHIST_PID_FILE}"
+  fi
+
+  if [[ -z "$__ZHIST_WATCHER_PID" ]]; then
     __zhist_watcher_start
     return;
   fi
 
   # If this user doesnt have write perms, dont try to manage watcher
-  if [ ! -w "${__ZHIST_PID_FILE}" ]; then
+  if [[ ! -w "${__ZHIST_PID_FILE}" && -e "${__ZHIST_PID_FILE}" ]]; then
     return 0;
-  fi
-
-  if [[ -z "$__ZHIST_WATCHER_PID" ]]; then
-    read -rt __ZHIST_WATCHER_PID < "${__ZHIST_PID_FILE}"
-  fi
-
-  if [[ -z "$__ZHIST_WATCHER_PID" ]]; then
-    __zhist_watcher_start
-    return;
   fi
 
   if ! \kill -0 "${__ZHIST_WATCHER_PID}" &> /dev/null ; then
 
     # If pid isnt running, double check pid value in case it was changed by another shell
-    read -rt __ZHIST_WATCHER_PID < "${__ZHIST_PID_FILE}"
+    if [[ -e "${__ZHIST_PID_FILE}" ]]; then
+      read -rt __ZHIST_WATCHER_PID < "${__ZHIST_PID_FILE}"
+    fi
 
     if ! \kill -0 "$__ZHIST_WATCHER_PID" &> /dev/null; then
       __zhist_watcher_start

@@ -3,6 +3,7 @@
 __zhist_insert_stop () {
 
   local retval=$?
+  local pipe_fd watch_fd
 
   echo >! "${__ZHIST_WATCH_FILE}"
 
@@ -10,9 +11,13 @@ __zhist_insert_stop () {
 
     __zhist_watcher_check
 
-    exec {__ZHIST_PIPE_FD}<> "${__ZHIST_PIPE}"
+    exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
+    echo >&"${watch_fd}"  &> /dev/null
+    exec {watch_fd}>&-
 
-    >&"$__ZHIST_PIPE_FD" >>! "$ZHIST_QUERY_LOG" <<- EOF
+    exec {pipe_fd}<> "${__ZHIST_PIPE}"
+
+    >&"$pipe_fd" >>! "$ZHIST_QUERY_LOG" <<- EOF
   UPDATE history SET
   exit_status = ${retval},
   duration = ${EPOCHSECONDS} - start_time
@@ -25,7 +30,7 @@ __zhist_insert_stop () {
   );
 EOF
 
-    exec {__ZHIST_PIPE_FD}>&-
+    exec {pipe_fd}>&-
 
   fi
 

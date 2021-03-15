@@ -2,15 +2,14 @@
 
 __zhist_watcher_start () {
 
-  if [[ ! -p "${__ZHIST_WATCH_FILE}" ]]; then
-    rm "$__ZHIST_WATCH_FILE" &> /dev/null
-    mkfifo "${__ZHIST_WATCH_FILE}"
-    chmod 600 "${__ZHIST_WATCH_FILE}";
-  fi
-
   __zhist_watcher_stop;
 
-  __zhist_watcher &!
+  ZHIST_DB="$ZHIST_DB" \
+    ZHIST_IDLE_TIMEOUT="${ZHIST_IDLE_TIMEOUT}" \
+    __ZHIST_PIPE="${__ZHIST_PIPE}" \
+    __ZHIST_PID_FILE="${__ZHIST_PID_FILE}" \
+    __ZHIST_WATCH_FILE="${__ZHIST_WATCH_FILE}"\
+    "${__ZHIST_BIN}/zhist_watcher" &!
 
   __ZHIST_WATCHER_PID="$!"
 

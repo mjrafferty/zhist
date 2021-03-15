@@ -2,13 +2,16 @@
 
 __zhist_watcher_stop () {
 
+  local watch_fd
+
   if [[ -n "${__ZHIST_WATCHER_PID}" ]]; then
     \kill "$__ZHIST_WATCHER_PID" &> /dev/null
-    unset "${__ZHIST_WATCHER_PID}"
-  fi
 
-  if [[ -e "${__ZHIST_PID_FILE}" ]]; then
-    rm "${__ZHIST_PID_FILE}" &> /dev/null
+    exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
+    echo >&"${watch_fd}"  &> /dev/null
+    exec {watch_fd}>&-
+
+    unset "${__ZHIST_WATCHER_PID}"
   fi
 
 }

@@ -4,6 +4,9 @@ which sqlite3 >/dev/null 2>&1 || return;
 
 typeset -g __ZHIST_DIR="${(%):-%N}"
 __ZHIST_DIR="${__ZHIST_DIR%/*}"
+
+typeset -g __ZHIST_BIN="${__ZHIST_DIR}/bin"
+
 typeset -g __ZHIST_HOST="${(%):-%m}"
 
 typeset -ga __ZHIST_DEFAULT_IGNORE_COMMANDS
@@ -29,7 +32,7 @@ typeset -g __ZHIST_PID_FILE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.pid"
 typeset -g __ZHIST_PIPE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.pipe"
 typeset -g __ZHIST_WATCH_FILE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.watch"
 
-typeset -g __ZHIST_SESSION __ZHIST_PIPE_FD __ZHIST_RAN_CMD __ZHIST_WATCHER_PID
+typeset -g __ZHIST_SESSION __ZHIST_RAN_CMD __ZHIST_WATCHER_PID
 
 typeset -g __ZHIST_DEFAULT_QUERY_LOG="${ZHIST_DATA_DIR}/zhist${LOGIN_ID:+-$LOGIN_ID}.log"
 
@@ -49,7 +52,7 @@ add-zsh-hook precmd __zhist_insert_stop
 
 fpath+="${__ZHIST_DIR}/functions"
 
-autoload -Uz zhist zhist-top __zhist_createdb  __zhist_insert_start  \
+autoload -Uz zhist zhist-top __zhist_insert_start  \
   __zhist_insert_stop  __zhist_query  __zhist_session_id  __zhist_watcher  \
   __zhist_watcher_check  __zhist_watcher_start  __zhist_watcher_stop
 

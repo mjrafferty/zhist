@@ -1,0 +1,194 @@
+#! /usr/bin/env zsh
+# vim:ft=zsh
+
+typeset -i SQLITE_PID=0
+typeset -i DB_INODE=0
+typeset -i LAST_CHECK_IN=0
+
+__exit () {
+  kill "$SQLITE_PID" &> /dev/null
+  rm "$__ZHIST_PIPE" &> /dev/null
+  rm "$__ZHIST_PID_FILE" &> /dev/null
+  rm "$__ZHIST_WATCH_FILE" &> /dev/null
+}
+
+__createdb () {
+
+  mkdir -p "$(dirname "${ZHIST_DB}")"
+
+  sqlite3 "${ZHIST_DB}" <<- EOF
+  CREATE TABLE commands (
+    id integer primary key autoincrement,
+    argv TEXT,
+    UNIQUE(argv) ON CONFLICT IGNORE
+  );
+  CREATE TABLE places (
+    id integer primary key autoincrement,
+    host TEXT,
+    dir TEXT,
+    UNIQUE(host, dir) ON CONFLICT IGNORE
+  );
+  CREATE TABLE users (
+    id integer primary key autoincrement,
+    user TEXT,
+    UNIQUE(user) ON CONFLICT IGNORE
+  );
+  CREATE TABLE history (
+    id integer primary key autoincrement,
+    session int,
+    command_id int REFERENCES commands (id),
+    place_id int REFERENCES places (id),
+    user_id int REFERENCES users (id),
+    exit_status INT,
+    start_time INT,
+    duration INT
+  );
+EOF
+
+}
+
+__checkPipe() {
+
+  if [[ ! -p "${__ZHIST_PIPE}" ]]; then
+
+    rm "$__ZHIST_PIPE" &> /dev/null
+    mkfifo "${__ZHIST_PIPE}" &> /dev/null
+    chmod 600 "${__ZHIST_PIPE}" &> /dev/null
+
+    if ((SQLITE_PID!=0)); then
+      kill "$SQLITE_PID" &> /dev/null
+      SQLITE_PID=0
+    fi
+
+  fi
+
+}
+
+__checkPidFile() {
+
+  if [[ ! -e "$__ZHIST_PID_FILE" ]]; then
+    echo "$$" >| "${__ZHIST_PID_FILE}"
+    chmod 600 "$__ZHIST_PID_FILE" &> /dev/null
+  fi
+
+}
+
+__checkWatchFile() {
+
+  local -a stats
+
+  if [[ -r "$__ZHIST_WATCH_FILE" ]]; then
+
+    if [[ ! -p "${__ZHIST_WATCH_FILE}" ]]; then
+      rm "$__ZHIST_WATCH_FILE" &> /dev/null
+      mkfifo "${__ZHIST_WATCH_FILE}" &> /dev/null
+      chmod 600 "${__ZHIST_WATCH_FILE}" &> /dev/null
+    fi
+
+    zstat -A stats +mtime "${__ZHIST_WATCH_FILE}"
+
+    if ((stats[1] > LAST_CHECK_IN)); then
+      LAST_CHECK_IN="${stats[1]}"
+    elif ((LAST_CHECK_IN < (EPOCHSECONDS - ZHIST_IDLE_TIMEOUT))); then
+      exit;
+    fi
+
+  else
+    exit;
+  fi
+
+}
+
+__checkDB () {
+
+  if  [[ ! -s "${ZHIST_DB}" ]]; then
+
+    __createdb;
+
+    DB_INODE=0
+
+    if ((SQLITE_PID!=0)); then
+      kill "$SQLITE_PID" &> /dev/null
+      SQLITE_PID=0
+    fi
+
+  fi
+
+  zstat -A stats +inode "${ZHIST_DB}"
+
+  if ((DB_INODE==0)); then
+
+    DB_INODE="${stats[1]}"
+
+  elif ((DB_INODE != stats[1])); then
+
+    DB_INODE="${stats[1]}"
+
+    if ((SQLITE_PID!=0)); then
+      kill "$SQLITE_PID" &> /dev/null
+      SQLITE_PID=0
+    fi
+
+  fi
+
+}
+
+__checkSqlite() {
+
+  local pipe_fd
+
+  if ((SQLITE_PID!=0)); then
+    if ! \kill -0 "${SQLITE_PID}" &> /dev/null; then
+      SQLITE_PID=0
+    fi
+  fi
+
+  if ((SQLITE_PID==0)); then
+
+    exec {pipe_fd}<> "${__ZHIST_PIPE}"
+
+    sqlite3 "${ZHIST_DB}" <&"${pipe_fd}" &
+    SQLITE_PID="$!"
+
+    exec {pipe_fd}>&-
+
+  fi
+
+}
+
+__wait() {
+
+  exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
+  read -u "$watch_fd" -t 15
+  exec {watch_fd}>&-
+
+}
+
+main() {
+
+  emulate -LR zsh
+
+  trap __exit EXIT HUP INT QUIT ABRT KILL TERM 
+
+  zmodload zsh/stat 
+  zmodload zsh/datetime
+
+  while true; do
+
+    __checkPipe
+
+    __checkPidFile
+
+    __checkWatchFile
+
+    __checkDB
+
+    __checkSqlite
+
+    __wait
+
+  done
+
+}
+
+main "$@"
