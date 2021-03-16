@@ -6,10 +6,10 @@ typeset -i DB_INODE=0
 typeset -i LAST_CHECK_IN=0
 
 __exit () {
-  kill "$SQLITE_PID" &> /dev/null
-  rm "$__ZHIST_PIPE" &> /dev/null
-  rm "$__ZHIST_PID_FILE" &> /dev/null
-  rm "$__ZHIST_WATCH_FILE" &> /dev/null
+  kill "$SQLITE_PID"
+  rm "$__ZHIST_PIPE"
+  rm "$__ZHIST_PID_FILE"
+  rm "$__ZHIST_WATCH_FILE"
 }
 
 __createdb () {
@@ -51,12 +51,12 @@ __checkPipe() {
 
   if [[ ! -p "${__ZHIST_PIPE}" ]]; then
 
-    rm "$__ZHIST_PIPE" &> /dev/null
-    mkfifo "${__ZHIST_PIPE}" &> /dev/null
-    chmod 600 "${__ZHIST_PIPE}" &> /dev/null
+    [[ -e "${__ZHIST_PIPE}" ]] && rm "$__ZHIST_PIPE"
+    mkfifo "${__ZHIST_PIPE}"
+    chmod 600 "${__ZHIST_PIPE}"
 
     if ((SQLITE_PID!=0)); then
-      kill "$SQLITE_PID" &> /dev/null
+      kill "$SQLITE_PID"
       SQLITE_PID=0
     fi
 
@@ -68,7 +68,7 @@ __checkPidFile() {
 
   if [[ ! -e "$__ZHIST_PID_FILE" ]]; then
     echo "$$" >| "${__ZHIST_PID_FILE}"
-    chmod 600 "$__ZHIST_PID_FILE" &> /dev/null
+    chmod 600 "$__ZHIST_PID_FILE"
   fi
 
 }
@@ -80,9 +80,9 @@ __checkWatchFile() {
   if [[ -r "$__ZHIST_WATCH_FILE" ]]; then
 
     if [[ ! -p "${__ZHIST_WATCH_FILE}" ]]; then
-      rm "$__ZHIST_WATCH_FILE" &> /dev/null
-      mkfifo "${__ZHIST_WATCH_FILE}" &> /dev/null
-      chmod 600 "${__ZHIST_WATCH_FILE}" &> /dev/null
+      [[ -e "${__ZHIST_WATCH_FILE}" ]] && rm "$__ZHIST_WATCH_FILE"
+      mkfifo "${__ZHIST_WATCH_FILE}"
+      chmod 600 "${__ZHIST_WATCH_FILE}"
     fi
 
     zstat -A stats +mtime "${__ZHIST_WATCH_FILE}"
@@ -108,7 +108,7 @@ __checkDB () {
     DB_INODE=0
 
     if ((SQLITE_PID!=0)); then
-      kill "$SQLITE_PID" &> /dev/null
+      kill "$SQLITE_PID"
       SQLITE_PID=0
     fi
 
@@ -125,7 +125,7 @@ __checkDB () {
     DB_INODE="${stats[1]}"
 
     if ((SQLITE_PID!=0)); then
-      kill "$SQLITE_PID" &> /dev/null
+      kill "$SQLITE_PID"
       SQLITE_PID=0
     fi
 
@@ -138,7 +138,7 @@ __checkSqlite() {
   local pipe_fd
 
   if ((SQLITE_PID!=0)); then
-    if ! \kill -0 "${SQLITE_PID}" &> /dev/null; then
+    if ! \kill -0 "${SQLITE_PID}"; then
       SQLITE_PID=0
     fi
   fi
@@ -177,13 +177,13 @@ main() {
 
     __checkPipe
 
-    __checkPidFile
-
-    __checkWatchFile
-
     __checkDB
 
     __checkSqlite
+
+    __checkPidFile
+
+    __checkWatchFile
 
     __wait
 

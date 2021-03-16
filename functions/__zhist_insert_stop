@@ -5,8 +5,6 @@ __zhist_insert_stop () {
   local retval=$?
   local pipe_fd watch_fd
 
-  echo >! "${__ZHIST_WATCH_FILE}"
-
   if (( __ZHIST_RAN_CMD == 1 )); then
 
     __zhist_watcher_check
