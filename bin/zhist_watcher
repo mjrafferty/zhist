@@ -147,7 +147,7 @@ __checkSqlite() {
 
     exec {pipe_fd}<> "${__ZHIST_PIPE}"
 
-    sqlite3 "${ZHIST_DB}" <&"${pipe_fd}" &
+    sqlite3 "${ZHIST_DB}" < ${__ZHIST_PIPE} &
     SQLITE_PID="$!"
 
     exec {pipe_fd}>&-
@@ -157,11 +157,7 @@ __checkSqlite() {
 }
 
 __wait() {
-
-  exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
-  read -u "$watch_fd" -t 15
-  exec {watch_fd}>&-
-
+  read -u -t 15 < "${__ZHIST_WATCH_FILE}"
 }
 
 main() {

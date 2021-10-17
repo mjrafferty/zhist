@@ -7,9 +7,7 @@ __zhist_watcher_stop () {
   if [[ -n "${__ZHIST_WATCHER_PID}" ]]; then
     \kill "$__ZHIST_WATCHER_PID" &> /dev/null
 
-    exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
-    echo >&"${watch_fd}"  &> /dev/null
-    exec {watch_fd}>&-
+    echo > "${__ZHIST_WATCH_FILE}" &> /dev/null
 
     unset "${__ZHIST_WATCHER_PID}"
   fi

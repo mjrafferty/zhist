@@ -52,8 +52,8 @@ add-zsh-hook precmd __zhist_insert_stop
 
 fpath+="${__ZHIST_DIR}/functions"
 
-autoload -Uz zhist zhist-top __zhist_insert_start  \
-  __zhist_insert_stop  __zhist_query  __zhist_session_id  __zhist_watcher  \
+autoload -Uz zhist zhist-top __zhist_insert_start _zhist_insert_stop  \
+  __zhist_insert_query  __zhist_query  __zhist_session_id  __zhist_watcher  \
   __zhist_watcher_check  __zhist_watcher_start  __zhist_watcher_stop
 
 mkdir -p "${ZHIST_DATA_DIR}" "${ZHIST_RUNTIME_DIR}" 2> /dev/null

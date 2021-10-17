@@ -30,6 +30,9 @@ __zhist_watcher_check () {
 
   fi
 
+  # Refresh the deadman switch
+  echo > "$__ZHIST_WATCH_FILE" 2> /dev/null
+
   return 0;
 
 }

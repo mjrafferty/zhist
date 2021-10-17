@@ -8,10 +8,6 @@ __zhist_insert_start() {
 
   __zhist_watcher_check
 
-  exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
-  echo >&"${watch_fd}"  &> /dev/null
-  exec {watch_fd}>&-
-
   for boring in "${ZHIST_IGNORE_COMMANDS[@]}"; do
     if [[ "$cmd" =~ $boring ]]; then
       return
@@ -20,11 +16,9 @@ __zhist_insert_start() {
 
   __ZHIST_RAN_CMD=1
 
-  exec {pipe_fd}<> "${__ZHIST_PIPE}"
-
   cmd="${(S)cmd//'/''}"
 
-  >&"$pipe_fd" >>! "$ZHIST_QUERY_LOG" <<- EOF
+  __zhist_insert_query "
   INSERT INTO commands (argv)
   VALUES ('${cmd}');
   INSERT INTO places (host, dir)
@@ -38,10 +32,7 @@ __zhist_insert_start() {
     WHERE commands.argv = '${cmd}'
     AND places.host = '$HOST'
     AND users.user = '${USER}'
-    AND places.dir = '${PWD}';
-EOF
-
-  exec {pipe_fd}>&-
+    AND places.dir = '${PWD}';"
 
 }
 

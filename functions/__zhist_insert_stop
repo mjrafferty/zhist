@@ -9,13 +9,7 @@ __zhist_insert_stop () {
 
     __zhist_watcher_check
 
-    exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
-    echo >&"${watch_fd}"  &> /dev/null
-    exec {watch_fd}>&-
-
-    exec {pipe_fd}<> "${__ZHIST_PIPE}"
-
-    >&"$pipe_fd" >>! "$ZHIST_QUERY_LOG" <<- EOF
+    __zhist_insert_query "
   UPDATE history SET
   exit_status = ${retval},
   duration = ${EPOCHSECONDS} - start_time
@@ -25,10 +19,7 @@ __zhist_insert_stop () {
     WHERE session = "${__ZHIST_SESSION}"
     AND exit_status IS NULL
     AND duration IS NULL
-  );
-EOF
-
-    exec {pipe_fd}>&-
+  );"
 
   fi
 
