@@ -157,7 +157,11 @@ __checkSqlite() {
 }
 
 __wait() {
-  read -u -t 15 < "${__ZHIST_WATCH_FILE}"
+
+  exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
+  read -u "$watch_fd" -t 15
+  exec {watch_fd}>&-
+
 }
 
 main() {
