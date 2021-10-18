@@ -16,7 +16,7 @@ __zhist_insert_stop () {
   WHERE id = (
     SELECT MAX(id)
     FROM history
-    WHERE session = "${__ZHIST_SESSION}"
+    WHERE session = '${__ZHIST_SESSION}'
     AND exit_status IS NULL
     AND duration IS NULL
   );"
