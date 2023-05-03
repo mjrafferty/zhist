@@ -30,7 +30,6 @@ typeset -g ZHIST_DB="${ZHIST_DB:-${__ZHIST_DEFAULT_DB}}"
 
 typeset -g __ZHIST_PID_FILE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.pid"
 typeset -g __ZHIST_PIPE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.pipe"
-typeset -g __ZHIST_WATCH_FILE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.watch"
 
 typeset -g __ZHIST_SESSION __ZHIST_RAN_CMD __ZHIST_WATCHER_PID
 
