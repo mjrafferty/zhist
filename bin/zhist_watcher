@@ -3,17 +3,16 @@
 
 typeset -i SQLITE_PID=0
 typeset -i DB_INODE=0
-typeset -i LAST_CHECK_IN=0
+typeset -i LAST_CHECK_IN
 
 __exit () {
   kill "$SQLITE_PID"
   rm "$__ZHIST_PIPE"
   rm "$__ZHIST_PID_FILE"
-  rm "$__ZHIST_WATCH_FILE"
+  exit
 }
 
 __createdb () {
-
   mkdir -p "$(dirname "${ZHIST_DB}")"
 
   sqlite3 "${ZHIST_DB}" <<- EOF
@@ -44,13 +43,10 @@ __createdb () {
     duration INT
   );
 EOF
-
 }
 
 __checkPipe() {
-
   if [[ ! -p "${__ZHIST_PIPE}" ]]; then
-
     [[ -e "${__ZHIST_PIPE}" ]] && rm "$__ZHIST_PIPE"
     mkfifo "${__ZHIST_PIPE}"
     chmod 600 "${__ZHIST_PIPE}"
@@ -59,82 +55,40 @@ __checkPipe() {
       kill "$SQLITE_PID"
       SQLITE_PID=0
     fi
-
   fi
-
 }
 
 __checkPidFile() {
-
   if [[ ! -e "$__ZHIST_PID_FILE" ]]; then
     echo "$$" >| "${__ZHIST_PID_FILE}"
     chmod 600 "$__ZHIST_PID_FILE"
   fi
-
-}
-
-__checkWatchFile() {
-
-  local -a stats
-
-  if [[ -r "$__ZHIST_WATCH_FILE" ]]; then
-
-    if [[ ! -p "${__ZHIST_WATCH_FILE}" ]]; then
-      [[ -e "${__ZHIST_WATCH_FILE}" ]] && rm "$__ZHIST_WATCH_FILE"
-      mkfifo "${__ZHIST_WATCH_FILE}"
-      chmod 600 "${__ZHIST_WATCH_FILE}"
-    fi
-
-    zstat -A stats +mtime "${__ZHIST_WATCH_FILE}"
-
-    if ((stats[1] > LAST_CHECK_IN)); then
-      LAST_CHECK_IN="${stats[1]}"
-    elif ((LAST_CHECK_IN < (EPOCHSECONDS - ZHIST_IDLE_TIMEOUT))); then
-      exit;
-    fi
-
-  else
-    exit;
-  fi
-
 }
 
 __checkDB () {
-
   if  [[ ! -s "${ZHIST_DB}" ]]; then
-
     __createdb;
-
     DB_INODE=0
-
     if ((SQLITE_PID!=0)); then
       kill "$SQLITE_PID"
       SQLITE_PID=0
     fi
-
   fi
 
   zstat -A stats +inode "${ZHIST_DB}"
 
   if ((DB_INODE==0)); then
-
     DB_INODE="${stats[1]}"
-
   elif ((DB_INODE != stats[1])); then
-
     DB_INODE="${stats[1]}"
-
     if ((SQLITE_PID!=0)); then
       kill "$SQLITE_PID"
       SQLITE_PID=0
     fi
-
   fi
-
 }
 
 __checkSqlite() {
-
   local pipe_fd
 
   if ((SQLITE_PID!=0)); then
@@ -144,51 +98,47 @@ __checkSqlite() {
   fi
 
   if ((SQLITE_PID==0)); then
-
     exec {pipe_fd}<> "${__ZHIST_PIPE}"
-
     sqlite3 "${ZHIST_DB}" < ${__ZHIST_PIPE} &
     SQLITE_PID="$!"
-
     exec {pipe_fd}>&-
-
   fi
-
 }
 
-__wait() {
+__check() {
+  if ((LAST_CHECK_IN < (EPOCHSECONDS - ZHIST_IDLE_TIMEOUT))); then
+    exit;
+  fi
+  __checkPipe
+  __checkDB
+  __checkSqlite
+  __checkPidFile
+}
 
-  exec {watch_fd}<> "${__ZHIST_WATCH_FILE}"
-  read -u "$watch_fd" -t 15
-  exec {watch_fd}>&-
-
+__refresh() {
+  LAST_CHECK_IN="${EPOCHSECONDS}"
+  return 0
 }
 
 main() {
-
   emulate -LR zsh
-
   trap __exit EXIT HUP INT QUIT ABRT KILL TERM 
+  trap __refresh USR1
+  trap __check ALRM
+  TMOUT=15
 
   zmodload zsh/stat 
   zmodload zsh/datetime
 
+  LAST_CHECK_IN="${EPOCHSECONDS}"
+
+  # For some reason TMOUT doesn't work until after the first SIGALRM 
+  kill -s ALRM $$
+
   while true; do
-
-    __checkPipe
-
-    __checkDB
-
-    __checkSqlite
-
-    __checkPidFile
-
-    __checkWatchFile
-
-    __wait
-
+    __check
+    wait "${SQLITE_PID}"
   done
-
 }
 
 main "$@"

@@ -14,8 +14,7 @@ __zhist_watcher_start () {
     ZHIST_IDLE_TIMEOUT="${ZHIST_IDLE_TIMEOUT}" \
     __ZHIST_PIPE="${__ZHIST_PIPE}" \
     __ZHIST_PID_FILE="${__ZHIST_PID_FILE}" \
-    __ZHIST_WATCH_FILE="${__ZHIST_WATCH_FILE}"\
-    "${__ZHIST_BIN}/zhist_watcher" &> /dev/null &!
+    "${__ZHIST_BIN}/zhist_watcher" &!
 
   __ZHIST_WATCHER_PID="$!"
 

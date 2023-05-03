@@ -31,7 +31,7 @@ __zhist_watcher_check () {
   fi
 
   # Refresh the deadman switch
-  echo > "$__ZHIST_WATCH_FILE" 2> /dev/null
+  kill -s USR1 "${__ZHIST_WATCHER_PID}"
 
   return 0;
 
