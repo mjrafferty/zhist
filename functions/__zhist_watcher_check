@@ -11,8 +11,8 @@ __zhist_watcher_check () {
     return;
   fi
 
-  # If this user doesnt have write perms, dont try to manage watcher
-  if [[ ! -w "${__ZHIST_PID_FILE}" && -e "${__ZHIST_PID_FILE}" ]]; then
+  # If this user doesnt own pid file, dont try to manage watcher
+  if [[ ! -O "${__ZHIST_PID_FILE}" && -e "${__ZHIST_PID_FILE}" ]]; then
     return 0;
   fi
 
