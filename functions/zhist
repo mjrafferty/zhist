@@ -41,7 +41,7 @@ zhist () {
 
   local sep=$'\x1f'
 
-  timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS \"Date/Time\""
+  timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS 'Date/Time'"
   selcols="id as ID, ${timecol}, session AS Session, user as User, dir as Directory"
   horcols="history.id as id, session, substr(places.dir,-50,50) as dir, users.user, substr(replace(commands.argv,X'0A','\n'),1,200) as argv, start_time"
   vercols="history.id as id, session, places.dir as dir, users.user,commands.argv as argv, start_time"
@@ -65,7 +65,7 @@ zhist () {
         i=1
         while [[ "${ARGA[++x]}" != '-'*  && -n "${ARGA[x]}" ]]; do
           if (( i > 1 )); then hostwhere+=", "; fi
-          hostwhere="${hostwhere}\"${ARGA[x]}\""
+          hostwhere="${hostwhere}'${ARGA[x]}'"
           ((i++));
         done
         ((x--));
@@ -128,7 +128,7 @@ zhist () {
         ;;
       "-s"|"--session")
         if [[ "${ARGA[++x]}" != '-'* && -n ${ARGA[x]} ]]; then
-          where="${where} AND session=\"${ARGA[x]}\""
+          where="${where} AND session='${ARGA[x]}'"
         else
           ((x--));
           echo "No or bad value for session";
@@ -137,7 +137,7 @@ zhist () {
       "-d"|"--detail")
         horcols="${horcols}, exit_status, duration "
         vercols="${vercols}, exit_status, duration "
-        selcols="${selcols}, exit_status AS \"Return Code\",duration AS Duration "
+        selcols="${selcols}, exit_status AS 'Return Code',duration AS Duration "
         ((colcount+=2))
         ;;
       "--forget")
@@ -166,7 +166,7 @@ zhist () {
   selcols="${selcols}, argv as Command"
 
   if [[ -z ${hostwhere} ]]; then
-    where="${where} AND places.host= \"$HOST\""
+    where="${where} AND places.host= '$HOST'"
   fi
 
   if [[ -n "$cmd" ]]; then
