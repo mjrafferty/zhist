@@ -1,13 +1,17 @@
 # vim:ft=zsh
 
 __zhist_insert_query() {
-
   local query
+  integer pipe_fd
 
   query="${1}"
 
-  echo "${query}" > "${__ZHIST_PIPE}" >>! "$ZHIST_QUERY_LOG" 
+  exec {pipe_fd} <> "${__ZHIST_PIPE}"
 
+  if [[ -n "${pipe_fd}" ]]; then
+    echo "${query}" >&"${pipe_fd}" >>! "$ZHIST_QUERY_LOG"
+    exec {pipe_fd}>&-
+  fi
 }
 
 __zhist_insert_query "$@"
