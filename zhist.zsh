@@ -37,12 +37,6 @@ typeset -g __ZHIST_SESSION __ZHIST_RAN_CMD __ZHIST_WATCHER_PID
 
 typeset -g __ZHIST_DEFAULT_QUERY_LOG="${ZHIST_DATA_DIR}/zhist${LOGIN_ID:+-$LOGIN_ID}.log"
 
-if [[ -n "$ZHIST_ENABLE_LOG" && "$ZHIST_ENABLE_LOG" == 1 ]]; then
-  ZHIST_QUERY_LOG="${ZHIST_QUERY_LOG:-$__ZHIST_DEFAULT_QUERY_LOG}"
-else
-  ZHIST_QUERY_LOG="/dev/null"
-fi
-
 setopt multios
 
 zmodload zsh/datetime
