@@ -4,6 +4,8 @@ __zhist_fzf() {
   local sep=$'\x1f'
   local timecol selcols cols query
   local -a fzf_args
+  local newline=$'\n'
+  local nbsp=$'\xc2\xa0'
 
   if (( ! ${+commands[fzf]} )) {
     echo "fzf not installed" >&2
@@ -12,7 +14,7 @@ __zhist_fzf() {
 
   timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS 'Date/Time'"
   selcols="${timecol}, argv as Command"
-  cols="substr(replace(commands.argv,X'0A','\n'),1,200) as argv, MAX(start_time) as 'start_time'"
+  cols="substr(replace(commands.argv,X'0A','\n'),1,2000) as argv, MAX(start_time) as 'start_time'"
 
   query="
   SELECT
@@ -39,9 +41,12 @@ __zhist_fzf() {
     --style=full
     )
 
-  LBUFFER=$(__zhist_query horizontal "$query" \
+  result=$(__zhist_query horizontal "$query" \
     | command column -t -s $sep \
     | command fzf "${fzf_args[@]}")
+  result="${result//\\n/$newline}"
+
+  LBUFFER="${result//$nbsp/ }"
 
   zle reset-prompt
 }
