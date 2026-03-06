@@ -10,7 +10,7 @@ __zhist_insert_query() {
 
   if [[ -n "${pipe_fd}" ]]; then
     if [[ "$ZHIST_ENABLE_LOG" == 1 ]]; then
-      echo "${query}" >&"${pipe_fd}" >>! "${ZHIST_QUERY_LOG:-$__ZHIST_DEFAULT_QUERY_LOG}"
+      echo "${query}" >&"${pipe_fd}" >>! "${ZHIST_QUERY_LOG}"
     else
       echo "${query}" >&"${pipe_fd}"
     fi

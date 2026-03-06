@@ -1,5 +1,6 @@
 #l vim:ft=zsh
 
+# Exit if sqlite3 not installed
 which sqlite3 >/dev/null 2>&1 || return;
 
 typeset -g __ZHIST_DIR="${(%):-%N}"
@@ -7,16 +8,14 @@ __ZHIST_DIR="${__ZHIST_DIR%/*}"
 
 typeset -g __ZHIST_BIN="${__ZHIST_DIR}/bin"
 
+# Exit if watcher can't be executed
 [[ -x "${__ZHIST_BIN}/zhist_watcher" ]] || return;
 
 typeset -g __ZHIST_HOST="${(%):-%m}"
 
-typeset -ga __ZHIST_DEFAULT_IGNORE_COMMANDS
+typeset -ga __ZHIST_DEFAULT_IGNORE_COMMANDS ZHIST_IGNORE_COMMANDS
 __ZHIST_DEFAULT_IGNORE_COMMANDS=("^ls$" "^cd$" "^ " "^zhist" "^$")
-
-if [[ -z "$ZHIST_IGNORE_COMMANDS" ]]; then 
-  ZHIST_IGNORE_COMMANDS=("${__ZHIST_DEFAULT_IGNORE_COMMANDS[@]}")
-fi
+ZHIST_IGNORE_COMMANDS=("${ZHIST_IGNORE_COMMANDS:-${__ZHIST_DEFAULT_IGNORE_COMMANDS[@]}}")
 
 typeset -gi __ZHIST_DEFAULT_IDLE_TIMEOUT=900
 typeset -gi ZHIST_IDLE_TIMEOUT="${ZHIST_IDLE_TIMEOUT:-$__ZHIST_DEFAULT_IDLE_TIMEOUT}"
@@ -36,6 +35,9 @@ typeset -g __ZHIST_PIPE="${ZHIST_RUNTIME_DIR}/${__ZHIST_HOST}.pipe"
 typeset -g __ZHIST_SESSION __ZHIST_RAN_CMD __ZHIST_WATCHER_PID
 
 typeset -g __ZHIST_DEFAULT_QUERY_LOG="${ZHIST_DATA_DIR}/zhist${LOGIN_ID:+-$LOGIN_ID}.log"
+typeset -g ZHIST_QUERY_LOG="${ZHIST_QUERY_LOG:-$__ZHIST_DEFAULT_QUERY_LOG}"
+
+typeset -g ZHIST_ENABLE_log=${ZHIST_ENABLE_LOG:-0}
 
 setopt multios
 
