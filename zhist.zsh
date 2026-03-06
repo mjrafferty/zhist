@@ -7,6 +7,8 @@ __ZHIST_DIR="${__ZHIST_DIR%/*}"
 
 typeset -g __ZHIST_BIN="${__ZHIST_DIR}/bin"
 
+[[ -x "${__ZHIST_BIN}/zhist_watcher" ]] || return;
+
 typeset -g __ZHIST_HOST="${(%):-%m}"
 
 typeset -ga __ZHIST_DEFAULT_IGNORE_COMMANDS
