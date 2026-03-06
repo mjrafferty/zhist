@@ -1,0 +1,49 @@
+# vim:ft=zsh
+
+__zhist_fzf() {
+  local sep=$'\x1f'
+  local timecol selcols cols query
+  local -a fzf_args
+
+  if (( ! ${+commands[fzf]} )) {
+    echo "fzf not installed" >&2
+    return 1
+  }
+
+  timecol="strftime('%Y-%m-%d %H:%M', start_time, 'unixepoch', 'localtime') AS 'Date/Time'"
+  selcols="${timecol}, argv as Command"
+  cols="substr(replace(commands.argv,X'0A','\n'),1,200) as argv, MAX(start_time) as 'start_time'"
+
+  query="
+  SELECT
+  ${selcols}
+  FROM
+  (
+    SELECT
+    ${cols}
+    FROM history
+    LEFT JOIN commands ON history.command_id = commands.id
+    GROUP BY argv
+    ORDER BY start_time DESC
+  )
+  ORDER BY start_time DESC;"
+
+  fzf_args=(
+    --no-sort
+    --exact
+    --smart-case
+    --height=50%
+    --header-lines=1
+    --layout=reverse-list
+    --accept-nth=3..
+    --style=full
+    )
+
+  LBUFFER=$(__zhist_query horizontal "$query" \
+    | command column -t -s $sep \
+    | command fzf "${fzf_args[@]}")
+
+  zle reset-prompt
+}
+
+__zhist_fzf
